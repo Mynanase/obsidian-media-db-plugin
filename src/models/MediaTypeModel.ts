@@ -12,6 +12,10 @@ export abstract class MediaTypeModel {
 
 	userData: object;
 
+	personalRating?: string;
+	personalStatus?: string;
+	personalTags?: string[];
+
 	protected constructor() {
 		this.type = '';
 		this.subType = '';
@@ -22,6 +26,9 @@ export abstract class MediaTypeModel {
 		this.url = '';
 		this.id = '';
 		this.userData = {};
+		this.personalRating = undefined;
+		this.personalStatus = undefined;
+		this.personalTags = undefined;
 	}
 
 	abstract getMediaType(): MediaType;

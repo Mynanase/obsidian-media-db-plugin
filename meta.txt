@@ -27,7 +27,7 @@
 			"format": "esm"
 		},
 		"src/models/MediaTypeModel.ts": {
-			"bytes": 939,
+			"bytes": 1121,
 			"imports": [
 				{
 					"path": "<runtime>",
@@ -603,7 +603,7 @@
 			"format": "esm"
 		},
 		"src/api/apis/BangumiAPI.ts": {
-			"bytes": 10141,
+			"bytes": 18691,
 			"imports": [
 				{
 					"path": "obsidian",
@@ -624,6 +624,21 @@
 					"path": "src/models/SeriesModel.ts",
 					"kind": "import-statement",
 					"original": "../../models/SeriesModel"
+				},
+				{
+					"path": "src/models/MusicReleaseModel.ts",
+					"kind": "import-statement",
+					"original": "../../models/MusicReleaseModel"
+				},
+				{
+					"path": "src/models/BoardGameModel.ts",
+					"kind": "import-statement",
+					"original": "../../models/BoardGameModel"
+				},
+				{
+					"path": "src/models/BookModel.ts",
+					"kind": "import-statement",
+					"original": "../../models/BookModel"
 				},
 				{
 					"path": "src/models/ComicMangaModel.ts",
@@ -4826,7 +4841,7 @@
 			"format": "esm"
 		},
 		"src/settings/Settings.ts": {
-			"bytes": 25028,
+			"bytes": 26356,
 			"imports": [
 				{
 					"path": "obsidian",
@@ -5086,7 +5101,7 @@
 			"format": "esm"
 		},
 		"src/main.ts": {
-			"bytes": 25794,
+			"bytes": 25796,
 			"imports": [
 				{
 					"path": "obsidian",
@@ -5362,7 +5377,7 @@
 					"bytesInOutput": 2710
 				},
 				"src/models/MediaTypeModel.ts": {
-					"bytesInOutput": 498
+					"bytesInOutput": 650
 				},
 				"src/models/BoardGameModel.ts": {
 					"bytesInOutput": 688
@@ -5422,7 +5437,7 @@
 					"bytesInOutput": 1790
 				},
 				"src/api/apis/BangumiAPI.ts": {
-					"bytesInOutput": 5661
+					"bytesInOutput": 8659
 				},
 				"src/modals/MediaDbFolderImportModal.ts": {
 					"bytesInOutput": 2148
@@ -5440,7 +5455,7 @@
 					"bytesInOutput": 894
 				},
 				"src/settings/Settings.ts": {
-					"bytesInOutput": 14190
+					"bytesInOutput": 15176
 				},
 				"node_modules/esm-env/index.js": {
 					"bytesInOutput": 0
@@ -5797,7 +5812,7 @@
 					"bytesInOutput": 1219
 				}
 			},
-			"bytes": 165174
+			"bytes": 169310
 		}
 	}
 }

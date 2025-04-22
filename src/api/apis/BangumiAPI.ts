@@ -1,16 +1,18 @@
-import { Notice } from 'obsidian';
+import { requestUrl, Notice, Platform } from 'obsidian';
 import type MediaDbPlugin from '../../main';
 import { GameModel } from '../../models/GameModel';
 import type { MediaTypeModel } from '../../models/MediaTypeModel';
 import { MovieModel } from '../../models/MovieModel';
 import { SeriesModel } from '../../models/SeriesModel';
+import { MusicReleaseModel } from '../../models/MusicReleaseModel';
+import { BoardGameModel } from '../../models/BoardGameModel';
+import { BookModel } from '../../models/BookModel';
 import { ComicMangaModel } from '../../models/ComicMangaModel';
 import { MediaType } from '../../utils/MediaType';
 import { APIModel } from '../APIModel';
 
 export class BangumiAPI extends APIModel {
 	plugin: MediaDbPlugin;
-	typeMappings: Map<string, string>;
 	apiDateFormat: string = 'YYYY-MM-DD';
 
 	constructor(plugin: MediaDbPlugin) {
@@ -18,319 +20,473 @@ export class BangumiAPI extends APIModel {
 
 		this.plugin = plugin;
 		this.apiName = 'BangumiAPI';
-		this.apiDescription = 'A free API for Anime, Manga, and Games from Bangumi.';
-		this.apiUrl = 'https://api.bgm.tv/';
-		this.types = [MediaType.Movie, MediaType.Series, MediaType.ComicManga, MediaType.Game];
-		this.typeMappings = new Map<string, string>();
-		this.typeMappings.set('anime', 'series');
-		this.typeMappings.set('movie', 'movie');
-		this.typeMappings.set('book', 'comicManga');
-		this.typeMappings.set('manga', 'comicManga');
-		this.typeMappings.set('game', 'game');
+		this.apiDescription = 'A free API for Anime, Manga, Games, Music, and Real from Bangumi.';
+		
+		// 默认API URL
+		this.apiUrl = 'https://bangumi.mynanase.workers.dev/';
+		
+		// 只有当settings已加载时才尝试读取代理URL
+		if (this.plugin.settings) {
+			// 使用自定义代理URL（如果已设置）
+			if (this.plugin.settings.bangumiProxyUrl && this.plugin.settings.bangumiProxyUrl.trim() !== '') {
+				// 确保URL以斜杠结尾
+				let proxyUrl = this.plugin.settings.bangumiProxyUrl.trim();
+				if (!proxyUrl.endsWith('/')) {
+					proxyUrl += '/';
+				}
+				this.apiUrl = proxyUrl;
+				console.log(`MDB | BangumiAPI | Using custom proxy URL: ${this.apiUrl}`);
+			}
+		} else {
+			console.log('MDB | BangumiAPI | Settings not loaded yet, using default API URL');
+		}
+		
+		this.types = [MediaType.Movie, MediaType.Series, MediaType.ComicManga, MediaType.Game, MediaType.BoardGame, MediaType.MusicRelease, MediaType.Book];
 	}
 
 	async searchByTitle(title: string): Promise<MediaTypeModel[]> {
 		console.log(`MDB | api "${this.apiName}" queried by Title`);
 
-		// 基本请求头
-		const headers: Record<string, string> = {
-			'Accept': 'application/json',
-			'User-Agent': 'ObsidianMediaDB/1.0'
-		};
+		try {
+			// Use Obsidian's requestUrl instead of the library to avoid CORS and header issues
+			const encodedTitle = encodeURIComponent(title);
+			
+			const searchUrl = `${this.apiUrl}search/subject/${encodedTitle}?responseGroup=large`; // Reverted based on working curl example
+			
+			console.log(`MDB | BangumiAPI | Searching with URL: ${searchUrl}`);
+			
+			const searchResponse = await requestUrl({
+				url: searchUrl,
+				method: 'GET',
+				headers: { // Add headers object
+					'accept': 'application/json',
+					'User-Agent': 'mynanase/obsidian-media-db-plugin (https://github.com/Mynanase/obsidian-media-db-plugin)',
+				}
+			});
+			
+			// Handle 404 specifically as "not found"
+			if (searchResponse.status === 404) {
+				console.log(`MDB | BangumiAPI | Search for "${title}" returned 404 (Not Found). Returning empty results.`);
+				return [];
+			}
 
-		// Bangumi API v0 search endpoint
-		const searchUrl = `https://api.bgm.tv/search/subject/${encodeURIComponent(title)}?type=0&responseGroup=small&max_results=20`;
-		const fetchData = await fetch(searchUrl, {
-			headers: headers
-		});
+			if (searchResponse.status !== 200) {
+				// Log other non-200 statuses as warnings/errors
+				console.warn(`MDB | BangumiAPI | Search request failed with status ${searchResponse.status}. URL: ${searchUrl}`);
+				// Throw an error or return empty array based on how strict you want to be
+				// For now, returning empty to prevent breaking the flow, but logging a warning.
+				return []; 
+			}
+			
+			const data = searchResponse.json;
+			// Log the raw response to see its structure
+			console.log('MDB | BangumiAPI | Raw search response:', data);
+			// Check if 'list' exists and is an array before proceeding
+			if (!data || !Array.isArray(data.list)) {
+				console.log('MDB | BangumiAPI | No search results found in response or invalid format.');
+				return [];
+			}
 
+			const results: MediaTypeModel[] = [];
+			for (const result of data.list) {
+				// Skip if essential info is missing
+				if (!result.id || !result.type) {
+					console.warn('MDB | BangumiAPI | Skipping search result with missing ID or type:', result);
+					continue;
+				}
 
-		if (fetchData.status !== 200) {
-			throw Error(`MDB | Received status code ${fetchData.status} from ${this.apiName}.`);
-		}
+				let type: MediaType;
+				const subType: string | undefined = undefined; // Subtype is unreliable in search results
+				const year = result.air_date ? result.air_date.split('-')[0] : ''; // Use 'air_date'
 
-		const data = await fetchData.json();
-		
-		if (!data.list || data.list.length === 0) {
+				switch (result.type) {
+					case 1: // Book
+						type = MediaType.Book;
+						break;
+					case 2: // Anime
+						// Subtypes (TV, OVA, Movie) are better determined in getById from infobox/tags
+						type = MediaType.Series;
+						break;
+					case 3: // Music
+						type = MediaType.MusicRelease;
+						break;
+					case 4: // Game
+						type = MediaType.Game;
+						break;
+					case 6: // Real
+						type = MediaType.Series;
+						break;
+					default:
+						console.warn(`MDB | BangumiAPI | Unknown Bangumi type ${result.type ?? 'N/A'} for search result ${result.id}`);
+						continue; // Skip this result
+				}
+
+				const modelData = {
+					type: type as any,
+					subType: subType,
+					title: result.name_cn || result.name,
+					englishTitle: result.name,
+					year: year,
+					dataSource: this.apiName,
+					id: result.id.toString(),
+					image: result.images?.large || result.images?.medium || '',
+				};
+
+				// Create the appropriate model instance based on type
+				let model: MediaTypeModel;
+				try {
+					// Cast type to any as workaround for comparison errors
+					switch (type as any) {
+						case MediaType.Movie:
+							model = new MovieModel(modelData);
+							break;
+						case MediaType.Series:
+							model = new SeriesModel(modelData);
+							break;
+						case MediaType.Game:
+							model = new GameModel(modelData);
+							break;
+						case MediaType.BoardGame:
+							model = new BoardGameModel(modelData); // Assuming constructor matches
+							break;
+						case MediaType.MusicRelease:
+							model = new MusicReleaseModel(modelData);
+							break;
+						case MediaType.Book:
+							// Note: search results don't distinguish between Book/ComicManga
+							// getById would refine this
+							model = new BookModel(modelData);
+							break;
+						default:
+							// Should not happen due to checks above, but satisfy compiler
+							console.warn(`MDB | BangumiAPI | Model creation skipped for unexpected type in search: ${type}`);
+							continue;
+					}
+					results.push(model);
+				} catch (e) {
+					console.error(`MDB | BangumiAPI | Error creating model for search result ${result.id}`, e);
+				}
+			}
+
+			return results;
+		} catch (error) {
+			console.error(`MDB | BangumiAPI | Error during searchByTitle for "${title}":`, error);
+			// Log additional details if available (e.g., from axios error)
+			if (error && typeof error === 'object') {
+				if ('response' in error && error.response) {
+					console.error('MDB | BangumiAPI | Error response:', error.response);
+				}
+				if ('request' in error && error.request) {
+					console.error('MDB | BangumiAPI | Error request:', error.request);
+				}
+				if ('message' in error) {
+					console.error('MDB | BangumiAPI | Error message:', error.message);
+				}
+			}
+			// Optionally check if it's a BangumiApiError and handle specific statuses (e.g., 401 Unauthorized)
+			// if (error instanceof BangumiApiError) { ... }
+			// For now, just return empty array on error
 			return [];
 		}
-
-		const ret: MediaTypeModel[] = [];
-
-		for (const result of data.list) {
-			// Map Bangumi type to our media types
-			// Type: 1=book, 2=anime, 3=music, 4=game, 6=real
-			// We'll skip type 6 (real) as it's too ambiguous and type 3 (music) as it's not supported
-			let type = '';
-			switch (result.type) {
-				case 1: // Book
-					type = 'comicManga';
-					break;
-				case 2: // Anime
-					// For anime, we need to check the category to determine if it's a movie or series
-					// Category 2 = movie, others (like 1 = TV, 3 = OVA, etc.) treated as series
-					type = result.category === 2 ? 'movie' : 'series';
-					break;
-				case 3: // Music
-					// Skip music as it's not supported in the current MediaType model
-					continue;
-				case 4: // Game
-					type = 'game';
-					break;
-				case 6: // Real (live-action)
-				default:
-					continue; // Skip unsupported types
-			}
-
-			// Extract year from date (format: yyyy-mm-dd)
-			const year = result.air_date ? result.air_date.substring(0, 4) : '';
-
-			if (type === 'movie') {
-				ret.push(
-					new MovieModel({
-						type: type,
-						title: result.name_cn || result.name,
-						englishTitle: result.name,
-						year: year,
-						dataSource: this.apiName,
-						id: result.id.toString(),
-						image: result.images?.medium || '',
-					}),
-				);
-			} else if (type === 'series') {
-				ret.push(
-					new SeriesModel({
-						type: type,
-						title: result.name_cn || result.name,
-						englishTitle: result.name,
-						year: year,
-						dataSource: this.apiName,
-						id: result.id.toString(),
-						image: result.images?.medium || '',
-					}),
-				);
-			} else if (type === 'comicManga') {
-				ret.push(
-					new ComicMangaModel({
-						type: type,
-						title: result.name_cn || result.name,
-						englishTitle: result.name,
-						year: year,
-						dataSource: this.apiName,
-						id: result.id.toString(),
-						image: result.images?.medium || '',
-					}),
-				);
-			} else if (type === 'game') {
-				ret.push(
-					new GameModel({
-						type: type,
-						title: result.name_cn || result.name,
-						englishTitle: result.name,
-						year: year,
-						dataSource: this.apiName,
-						id: result.id.toString(),
-						image: result.images?.medium || '',
-					}),
-				);
-			}
-		}
-
-		return ret;
 	}
 
 	async getById(id: string): Promise<MediaTypeModel> {
 		console.log(`MDB | api "${this.apiName}" queried by ID`);
 
-		// 基本请求头
-		const headers: Record<string, string> = {
-			'Accept': 'application/json',
-			'User-Agent': 'ObsidianMediaDB/1.0'
-		};
+		const accessToken = this.plugin.settings?.bangumiAccessToken;
+		const userId = this.plugin.settings?.bangumiUserId; // Get user ID from settings
+		let subjectData: any;
+		let userData: any = null; // User collection data is optional
+		let fetchedFromCollection = false;
 
-		// Bangumi API v0 subject endpoint
-		const searchUrl = `https://api.bgm.tv/subject/${encodeURIComponent(id)}?responseGroup=large`;
-		const fetchData = await fetch(searchUrl, {
-			headers: headers
+		try {
+			// 1. Fetch user collection data (if token and user ID are available)
+			if (accessToken && userId) {
+				try {
+					const userCollectionUrl = `${this.apiUrl}v0/users/${userId}/collections/${id}`;
+					console.log(`MDB | BangumiAPI | Fetching user collection data: ${userCollectionUrl}`);
+					const userCollectionResponse = await requestUrl({
+						url: userCollectionUrl,
+						method: 'GET',
+						headers: {
+							'Authorization': `Bearer ${accessToken}`, // Include token here
+							'accept': 'application/json',
+							'User-Agent': 'mynanase/obsidian-media-db-plugin (https://github.com/Mynanase/obsidian-media-db-plugin)', // Consistent User-Agent
+						},
+					});
+
+					if (userCollectionResponse.status === 200) {
+						userData = userCollectionResponse.json;
+						fetchedFromCollection = true;
+						console.log(`MDB | BangumiAPI | Successfully fetched user data for ${id}`);
+					} else {
+						console.warn(`MDB | BangumiAPI | Failed to fetch user collection data for ${id}. Status: ${userCollectionResponse.status}. Proceeding with public data.`);
+						// Don't throw error here, just log and continue to public endpoint
+					}
+				} catch (userError) {
+					console.warn(`MDB | BangumiAPI | Error fetching user collection data for ${id}:`, userError);
+					// Proceed to public endpoint even if user collection fails
+				}
+			} else {
+				console.log(`MDB | BangumiAPI | Access token or User ID not provided. Skipping user collection fetch for ${id}.`);
+			}
+
+			// 2. Fetch public subject data (always required)
+			const subjectUrl = `${this.apiUrl}v0/subjects/${id}`;
+			console.log(`MDB | BangumiAPI | Fetching public subject data: ${subjectUrl}`);
+			const subjectResponse = await requestUrl({
+				url: subjectUrl,
+				method: 'GET',
+				headers: { // Explicitly define headers WITHOUT Authorization
+					'accept': 'application/json',
+					'User-Agent': 'mynanase/obsidian-media-db-plugin (https://github.com/Mynanase/obsidian-media-db-plugin)', // Consistent User-Agent
+				},
+			});
+
+			if (subjectResponse.status !== 200) {
+				throw new Error(`MDB | BangumiAPI | Failed to fetch subject details for ${id}. Status: ${subjectResponse.status}`);
+			}
+			subjectData = subjectResponse.json;
+
+			// Check if subjectData is valid
+			if (!subjectData || !subjectData.id) {
+				throw new Error(`MDB | BangumiAPI | Invalid or empty subject data received for ${id}.`);
+			}
+
+			// --- Process the fetched subjectData and userData --- 
+
+			if (!subjectData) {
+				throw new Error(`MDB | BangumiAPI | Could not retrieve subject data for ID ${id}.`);
+			}
+
+			// Determine MediaType and SubType from subjectData.type and subjectData.tags/infobox
+			let type: MediaType;
+			let subType: string | null = null;
+			const bangumiType = subjectData.type; // 1: Book, 2: Anime, 3: Music, 4: Game, 6: Real(三次元)
+
+			switch (bangumiType) {
+				case 1: // Book
+					type = MediaType.Book;
+					// Check tags or infobox for subtypes like Novel, Artbook, Manga (Manga should ideally be ComicManga)
+					// Example check (needs refinement based on actual tags/infobox data)
+					if (subjectData.plotform === "漫画") subType = 'Manga';
+					else if (subjectData.plotform === '小说') subType = 'Novel';
+					else if (subjectData.plotform === '画集') subType = 'Artbook';
+					else if (subjectData.plotform === '绘本') subType = 'PictureBook';
+					else if (subjectData.plotform === '公式书') subType = 'GuideBook';
+					else if (subjectData.plotform === '写真') subType = 'PhotoBook';
+					else subType = 'Other'; // Default book subtype
+					break;
+				case 2: // Anime
+					type = MediaType.Series; // Default to Series for Anime
+					// Check infobox for 'TV', 'OVA', 'Movie'
+					if (subjectData.plotform === 'TV') subType = 'TV';
+					else if (subjectData.plotform === 'OVA')
+						if (subjectData.eps === 1) type = MediaType.Movie, subType = 'OVA';
+						else subType = 'OVA';
+					else if (subjectData.plotform === 'WEB') subType = 'WEB';
+					else if (subjectData.plotform === '剧场版') subType = '';
+					else if (subjectData.plotform === 'Movie') type = MediaType.Movie, subType = 'Anime';
+					else if (subjectData.plotform === '动态漫画') subType = 'MotionComic';
+					else subType = 'Other'; // General Anime if subtype unclear
+					break;
+				case 3: // Music
+					type = MediaType.MusicRelease;
+					break;
+				case 4: // Game
+					type = MediaType.Game;
+					if (subjectData.plotform === '游戏') subType = 'videoGame';
+					else if (subjectData.plotform === '扩展包') subType = 'DLC';
+					else if (subjectData.plotform === '桌游') type = MediaType.BoardGame;
+					else subType = 'Other';
+					break;
+				case 6: // Real (三次元) - Often TV Dramas or Movies
+					type = MediaType.Series;
+					if (subjectData.plotform === '电影') type = MediaType.Movie;
+					else if (subjectData.plotform === '日剧') subType = 'JPTV';
+					else if (subjectData.plotform === '华语剧') subType = 'CNTV';
+					else if (subjectData.plotform === '欧美剧') subType = 'ENTV';
+					else if (subjectData.plotform === '电视剧') subType = 'TV';
+					else if (subjectData.plotform === '演出') 
+						subType = 'Live';
+						if (subjectData.eps === 1) type = MediaType.Movie;
+					else if (subjectData.plotform === '综艺') subType = 'Show';
+					else subType = 'Other';
+					break;
+				default:
+					console.warn(`MDB | BangumiAPI | Unknown Bangumi type: ${bangumiType} for ID ${id}. Defaulting to Series.`);
+					type = MediaType.Series; // Default type if unknown
+			}
+
+			// --- Extract Common Fields --- 
+			const year = subjectData.date ? new Date(subjectData.date).getFullYear().toString() : '';
+			let primaryTitle = subjectData.name_cn || subjectData.name;
+			let englishTitle = subjectData.name;
+			if (subjectData.name_cn && subjectData.name) {
+				// If both exist, name_cn is primary, name is english/original
+				primaryTitle = subjectData.name_cn;
+				englishTitle = subjectData.name;
+			} else if (!subjectData.name_cn && subjectData.name) {
+				// If only name exists, use it as primary, clear english
+				primaryTitle = subjectData.name;
+				englishTitle = ''; // Or maybe keep it as name? Depends on desired behavior
+			}
+			// Further check Aliases if needed, Bangumi API doesn't provide them directly in subject details
+
+			const title = primaryTitle;
+			const imageUrl = subjectData.images?.large || subjectData.images?.common || subjectData.images?.medium || '';
+			const description = subjectData.summary || '';
+			const rating = subjectData.rating?.score?.toString() || ''; // Public rating
+			// Extract top 5 tags based on count from subjectData
+			const tags = subjectData.tags && Array.isArray(subjectData.tags)
+				? subjectData.tags
+					.sort((a: { count: number }, b: { count: number }) => b.count - a.count) // Sort descending by count
+					.slice(0, 5) // Take top 5
+					.map((tag: { name: string }) => tag.name) // Extract names
+				: []; // Default to empty array if no tags
+			const genres = this.extractInfoArray(subjectData.infobox, ['游戏类型', '体裁', '题材']).join(', ');
+
+			// --- Extract Personal Fields (from userData if available) --- 
+			const personalRating = userData?.rate; // Already a string or undefined
+			const personalTags = userData?.tags; // Already an array or undefined
+			let personalStatus: string | undefined = undefined;
+			if (userData?.type !== undefined) {
+				switch (userData.type) {
+					case 1: personalStatus = 'Wish'; break;    // 想做
+					case 2: personalStatus = 'Collect'; break; // 做过
+					case 3: personalStatus = 'Doing'; break;   // 在做
+					case 4: personalStatus = 'OnHold'; break; // 搁置
+					case 5: personalStatus = 'Dropped'; break; // 抛弃
+				}
+			}
+
+			// --- Extract Role-Specific Fields --- 
+			// These are generally from subjectData.infobox
+			const director = this.extractInfoArray(subjectData.infobox, ['导演']).join(', ');
+			const writer = this.extractInfoArray(subjectData.infobox, ['脚本', '原作']).join(', ');
+			const cast = this.extractInfoArray(subjectData.infobox, ['主演', '声优', 'cv', 'キャスト']).join(', ');
+			const publisher = this.extractInfoArray(subjectData.infobox, ['出版社', '唱片公司', '发行']).join(', ');
+			const developer = this.extractInfoArray(subjectData.infobox, ['开发', '游戏开发']).join(', ');
+
+			// --- Construct Model --- 
+			const modelData: any = {
+				type: type,
+				subType: subType === null ? undefined : subType,
+				title: title,
+				englishTitle: englishTitle,
+				year: year,
+				id: id,
+				imageUrl: imageUrl,
+				description: description,
+				rating: rating,
+				tags: tags,
+				genres: genres,
+				personalRating: personalRating,
+				personalTags: personalTags,
+				personalStatus: personalStatus,
+				// Add role fields
+				director: director,
+				writer: writer,
+				cast: cast,
+				publisher: publisher,
+				developer: developer,
+				// Add other common fields if needed
+			};
+
+			let model: MediaTypeModel;
+
+			// Use the determined 'type' to instantiate the correct model
+			switch (type) {
+				case MediaType.Book:
+					model = new BookModel({ ...modelData, author: this.extractInfoArray(subjectData.infobox, ['作者']).join(', ') });
+					break;
+				case MediaType.Movie:
+					model = new MovieModel(modelData);
+					break;
+				case MediaType.Series:
+					model = new SeriesModel(modelData);
+					break;
+				case MediaType.Game:
+					model = new GameModel(modelData);
+					break;
+				case MediaType.MusicRelease:
+					model = new MusicReleaseModel({ ...modelData, artist: this.extractInfoArray(subjectData.infobox, ['艺术家', '歌手', '作曲']).join(', ') });
+					break;
+				// Add cases for other types like BoardGame if supported by Bangumi
+				default:
+					throw new Error(`MDB | BangumiAPI | Unrecognized or unsupported media type '${type}' received for ID ${id}.`);
+			}
+
+			return model;
+		} catch (error) {
+			console.error(`MDB | BangumiAPI | Error fetching data for ID ${id}:`, error);
+			throw new Error(`MDB | BangumiAPI | Failed to fetch data for ID ${id}. Error: ${error instanceof Error ? error.message : String(error)}`);
+		}
+	}
+
+	private extractStaff(staff: any[] | undefined, roles: string[]): string[] {
+		if (!staff) return [];
+		
+		const names = new Set<string>(); // Use Set to avoid duplicate names
+		staff.forEach(member => {
+			if (member.jobs?.some((job: string) => roles.includes(job))) {
+				names.add(member.name);
+			}
 		});
-
-
-		if (fetchData.status !== 200) {
-			throw Error(`MDB | Received status code ${fetchData.status} from ${this.apiName}.`);
-		}
-
-		const result = await fetchData.json();
-		
-		// Map Bangumi type to our media types
-		// Type: 1=book, 2=anime, 3=music, 4=game, 6=real
-		let type = '';
-		switch (result.type) {
-			case 1: // Book
-				type = 'comicManga';
-				break;
-			case 2: // Anime
-				// For anime, we need to check the category to determine if it's a movie or series
-				// Category 2 = movie, others (like 1 = TV, 3 = OVA, etc.) treated as series
-				type = result.category === 2 ? 'movie' : 'series';
-				break;
-			case 3: // Music
-				throw Error(`MDB | Music type not supported for id ${id}`);
-			case 4: // Game
-				type = 'game';
-				break;
-			case 6: // Real (live-action)
-				throw Error(`MDB | Real (live-action) type not supported for id ${id}`);
-			default:
-				throw Error(`MDB | Unknown media type ${result.type} for id ${id}`);
-		}
-
-		// Extract year from date (format: yyyy-mm-dd)
-		const year = result.air_date ? result.air_date.substring(0, 4) : '';
-		
-		// Extract genres
-		const genres = result.tags ? result.tags.map((tag: any) => tag.name) : [];
-		
-		// Create URL to Bangumi page
-		const url = `https://bgm.tv/subject/${id}`;
-
-		if (type === 'movie') {
-			return new MovieModel({
-				type: type,
-				title: result.name_cn || result.name,
-				englishTitle: result.name,
-				year: year,
-				dataSource: this.apiName,
-				url: url,
-				id: result.id.toString(),
-
-				plot: result.summary || '',
-				genres: genres,
-				director: result.staff ? this.extractStaff(result.staff, '导演') : [],
-				writer: result.staff ? this.extractStaff(result.staff, '脚本') : [],
-				studio: result.producer || [],
-				duration: result.duration || 'unknown',
-				onlineRating: result.rating?.score || 0,
-				actors: result.crt ? result.crt.map((actor: any) => actor.name) : [],
-				image: result.images?.large || '',
-
-				released: true,
-				streamingServices: [],
-				premiere: this.plugin.dateFormatter.format(result.air_date, this.apiDateFormat) || 'unknown',
-
-				userData: {
-					watched: false,
-					lastWatched: '',
-					personalRating: 0,
-				},
-			});
-		} else if (type === 'series') {
-			return new SeriesModel({
-				type: type,
-				title: result.name_cn || result.name,
-				englishTitle: result.name,
-				year: year,
-				dataSource: this.apiName,
-				url: url,
-				id: result.id.toString(),
-
-				plot: result.summary || '',
-				genres: genres,
-				writer: result.staff ? this.extractStaff(result.staff, '脚本') : [],
-				studio: result.producer || [],
-				episodes: result.eps_count || 0,
-				duration: result.duration || 'unknown',
-				onlineRating: result.rating?.score || 0,
-				actors: result.crt ? result.crt.map((actor: any) => actor.name) : [],
-				image: result.images?.large || '',
-
-				released: true,
-				streamingServices: [],
-				airing: result.air_status === 'Air',
-				airedFrom: this.plugin.dateFormatter.format(result.air_date, this.apiDateFormat) || 'unknown',
-				airedTo: result.end_date ? (this.plugin.dateFormatter.format(result.end_date, this.apiDateFormat) || 'unknown') : 'unknown',
-
-				userData: {
-					watched: false,
-					lastWatched: '',
-					personalRating: 0,
-				},
-			});
-		} else if (type === 'comicManga') {
-			return new ComicMangaModel({
-				type: type,
-				title: result.name_cn || result.name,
-				englishTitle: result.name,
-				alternateTitles: [result.name_cn, result.name].filter(Boolean),
-				year: year,
-				dataSource: this.apiName,
-				url: url,
-				id: result.id.toString(),
-
-				plot: result.summary || '',
-				genres: genres,
-				authors: result.staff ? this.extractStaff(result.staff, '作者') : [],
-				chapters: result.eps_count || 0,
-				volumes: result.volumes || 0,
-				onlineRating: result.rating?.score || 0,
-				image: result.images?.large || '',
-
-				released: true,
-				publishers: result.producer || [],
-				publishedFrom: this.plugin.dateFormatter.format(result.air_date, this.apiDateFormat) || 'unknown',
-				publishedTo: result.end_date ? (this.plugin.dateFormatter.format(result.end_date, this.apiDateFormat) || 'unknown') : 'unknown',
-				status: this.mapStatus(result.air_status),
-
-				userData: {
-					read: false,
-					lastRead: '',
-					personalRating: 0,
-				},
-			});
-		} else if (type === 'game') {
-			return new GameModel({
-				type: type,
-				title: result.name_cn || result.name,
-				englishTitle: result.name,
-				year: year,
-				dataSource: this.apiName,
-				url: url,
-				id: result.id.toString(),
-
-				developers: result.producer || [],
-				publishers: result.producer || [],
-				genres: genres,
-				onlineRating: result.rating?.score || 0,
-				image: result.images?.large || '',
-
-				released: true,
-				releaseDate: this.plugin.dateFormatter.format(result.air_date, this.apiDateFormat) || 'unknown',
-
-				userData: {
-					played: false,
-					personalRating: 0,
-				},
-			});
-		}
-
-		throw new Error(`MDB | Unknown media type for id ${id}`);
+		return Array.from(names);
 	}
 
-	// Helper method to extract staff by role
-	private extractStaff(staff: any[], role: string): string[] {
-		if (!staff || !Array.isArray(staff)) return [];
-		
-		return staff
-			.filter(person => person.role && person.role.includes(role))
-			.map(person => person.name);
+	private mapStatus(bangumiStatusType: string | undefined): string {
+		switch (bangumiStatusType) {
+			case '1': return 'Plan to Watch'; // wish
+			case '2': return 'Completed';    // collect
+			case '3': return 'Watching';     // do
+			case '4': return 'On Hold';      // on_hold
+			case '5': return 'Dropped';      // dropped
+			default: return '';           // Unknown or not collected
+		}
 	}
 
-	// Helper method to map Bangumi status to plugin status
-	private mapStatus(status: string): string {
-		switch (status) {
-			case 'Air': return 'Ongoing';
-			case 'NA': return 'Not yet aired';
-			case 'End': return 'Completed';
-			default: return status;
+	private extractInfo(infobox: any, keys: string[]): string {
+		if (!infobox) return '';
+
+		for (const key of keys) {
+			if (infobox[key]) return infobox[key];
 		}
+
+		return '';
+	}
+
+	private extractInfoArray(infobox: any[] | undefined, targetKeys: string[]): string[] {
+		if (!Array.isArray(infobox)) return [];
+
+		const values: string[] = [];
+
+		for (const item of infobox) {
+			// Check if the item has a key and if that key is one we're looking for
+			if (item && typeof item === 'object' && item.key && targetKeys.includes(item.key)) {
+				// Handle different value types
+				if (typeof item.value === 'string') {
+					values.push(item.value);
+				} else if (Array.isArray(item.value)) {
+					// If value is an array (like '平台'), extract 'v' or the item itself if it's a simple string array
+					const subValues = item.value.map((subItem: any) => {
+						if (typeof subItem === 'object' && subItem.v) {
+							return subItem.v;
+						} else if (typeof subItem === 'string') {
+							return subItem;
+						}
+						return ''; // Or handle other structures as needed
+					}).filter(Boolean).join(', '); // Join sub-values with comma
+					if (subValues) values.push(subValues);
+				} else if (item.value && typeof item.value === 'object') {
+					// Handle cases where value is a simple object (though not seen in example)
+					// Maybe stringify or extract specific properties? For now, skip or stringify.
+					// values.push(JSON.stringify(item.value)); 
+				}
+			}
+		}
+
+		return values;
 	}
 }

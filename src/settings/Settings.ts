@@ -15,6 +15,9 @@ export interface MediaDbPluginSettings {
 	MobyGamesKey: string;
 	GiantBombKey: string;
 	ComicVineKey: string;
+	bangumiAccessToken: string;
+	bangumiUserId: string;
+	bangumiProxyUrl: string;
 	sfwFilter: boolean;
 	templates: boolean;
 	customDateFormat: string;
@@ -83,6 +86,9 @@ const DEFAULT_SETTINGS: MediaDbPluginSettings = {
 	MobyGamesKey: '',
 	GiantBombKey: '',
 	ComicVineKey: '',
+	bangumiAccessToken: '',
+	bangumiUserId: '',
+	bangumiProxyUrl: '',
 	sfwFilter: true,
 	templates: true,
 	customDateFormat: 'L',
@@ -227,6 +233,42 @@ export class MediaDbSettingTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.ComicVineKey)
 					.onChange(data => {
 						this.plugin.settings.ComicVineKey = data;
+						void this.plugin.saveSettings();
+					});
+			});
+
+		new Setting(containerEl)
+			.setName('Bangumi Access Token')
+			.setDesc(fragWithHTML('Access Token for personal data access on <a href="https://next.bgm.tv/demo/access-token" target="_blank">bangumi.tv</a>. Keep this private.'))
+			.addText(cb => {
+				cb.setPlaceholder('Your Access Token')
+					.setValue(this.plugin.settings.bangumiAccessToken)
+					.onChange(async (value) => {
+						this.plugin.settings.bangumiAccessToken = value;
+						await this.plugin.saveSettings();
+					});
+			});
+
+		new Setting(containerEl)
+			.setName('Bangumi User ID')
+			.setDesc('User ID for Bangumi')
+			.addText(cb => {
+				cb.setPlaceholder('Your User ID')
+					.setValue(this.plugin.settings.bangumiUserId)
+					.onChange(async (value) => {
+						this.plugin.settings.bangumiUserId = value;
+						await this.plugin.saveSettings();
+					});
+			});
+
+		new Setting(containerEl)
+			.setName('Bangumi Proxy URL')
+			.setDesc('Bangumi API反向代理URL')
+			.addText(cb => {
+				cb.setPlaceholder('Proxy URL')
+					.setValue(this.plugin.settings.bangumiProxyUrl)
+					.onChange(data => {
+						this.plugin.settings.bangumiProxyUrl = data;
 						void this.plugin.saveSettings();
 					});
 			});
