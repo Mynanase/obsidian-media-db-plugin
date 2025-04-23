@@ -347,8 +347,6 @@ export class BangumiAPI extends APIModel {
 			const description = subjectData.summary || '';
 			const rating = subjectData.rating?.score || undefined; // Public rating (number or undefined)
 			// Extract top 5 tags based on count from subjectData
-			console.log('Bangumi tags:', subjectData.tags); // Add log for tags
-			console.log('Bangumi tags:', subjectData.tags, subjectData.tags[0]); // Add log for tags
 			const apiTags = subjectData.tags && Array.isArray(subjectData.tags) // Renamed to apiTags
 				? subjectData.tags
 					.slice(0, 5) // Take top 5
