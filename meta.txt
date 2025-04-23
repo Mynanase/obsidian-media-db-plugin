@@ -106,7 +106,7 @@
 			"format": "esm"
 		},
 		"src/models/GameModel.ts": {
-			"bytes": 1529,
+			"bytes": 1941,
 			"imports": [
 				{
 					"path": "src/utils/MediaType.ts",
@@ -603,7 +603,7 @@
 			"format": "esm"
 		},
 		"src/api/apis/BangumiAPI.ts": {
-			"bytes": 22066,
+			"bytes": 22737,
 			"imports": [
 				{
 					"path": "obsidian",
@@ -5389,7 +5389,7 @@
 					"bytesInOutput": 2188
 				},
 				"src/models/GameModel.ts": {
-					"bytesInOutput": 843
+					"bytesInOutput": 1175
 				},
 				"src/models/MovieModel.ts": {
 					"bytesInOutput": 782
@@ -5437,7 +5437,7 @@
 					"bytesInOutput": 1790
 				},
 				"src/api/apis/BangumiAPI.ts": {
-					"bytesInOutput": 9741
+					"bytesInOutput": 10174
 				},
 				"src/modals/MediaDbFolderImportModal.ts": {
 					"bytesInOutput": 2148
@@ -5812,7 +5812,7 @@
 					"bytesInOutput": 1219
 				}
 			},
-			"bytes": 170714
+			"bytes": 171479
 		}
 	}
 }

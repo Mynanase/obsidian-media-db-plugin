@@ -12,13 +12,22 @@ export class GameModel extends MediaTypeModel {
 	platforms?: string[];
 	developers?: string[];
 	publishers?: string[];
-	music: string[];
-	image: string;
-	website: string;
-	description: string;
+	composer?: string[];
+	image?: string;
+	website?: string;
+	description?: string;
 	released?: boolean;
 	releaseDate: string;
 	apiTags?: string[];
+	director?: string[];
+	producer?: string[];
+	supervisor?: string[];
+	designer?: string[];
+	programmer?: string[];
+	soundDirector?: string[];
+	writer?: string[];
+	cast?: string[];
+	artist?: string[];
 
 	userData: {
 		played: boolean;
@@ -36,13 +45,22 @@ export class GameModel extends MediaTypeModel {
 		this.platforms = [];
 		this.developers = [];
 		this.publishers = [];
-		this.music = [];
+		this.composer = [];
 		this.image = '';
 		this.website = '';
 		this.description = '';
 		this.released = false;
 		this.releaseDate = '';
 		this.apiTags = [];
+		this.director = [];
+		this.producer = [];
+		this.supervisor = [];
+		this.designer = [];
+		this.programmer = [];
+		this.soundDirector = [];
+		this.writer = [];
+		this.cast = [];
+		this.artist = [];
 
 		this.userData = {
 			played: false,

@@ -373,12 +373,17 @@ export class BangumiAPI extends APIModel {
 			// --- Extract Role-Specific Fields --- 
 			// These are generally from subjectData.infobox
 			const director = this.extractInfoArray(subjectData.infobox, ['导演']);
+			const producer = this.extractInfoArray(subjectData.infobox, ['制作人']);
+			const supervisor = this.extractInfoArray(subjectData.infobox, ['监督']);
+			const designer = this.extractInfoArray(subjectData.infobox, ['设计师', '游戏设计师']);
+			const programmer = this.extractInfoArray(subjectData.infobox, ['程序']);
+			const soundDirector = this.extractInfoArray(subjectData.infobox, ['音响监督']);
 			const writer = this.extractInfoArray(subjectData.infobox, ['脚本', '原作']);
 			const cast = this.extractInfoArray(subjectData.infobox, ['主演', '声优', 'cv', 'キャスト']);
 			const publisher = this.extractInfoArray(subjectData.infobox, ['出版社', '唱片公司', '发行']);
 			const developer = this.extractInfoArray(subjectData.infobox, ['开发', '游戏开发']); // Remember to add '游戏开发商' here again if needed
 			const website = this.extractInfoArray(subjectData.infobox, ['website']);
-			const music = this.extractInfoArray(subjectData.infobox, ['音乐']);
+			const composer = this.extractInfoArray(subjectData.infobox, ['音乐']);
 			const artist = this.extractInfoArray(subjectData.infobox, ['美工', '美术']);
 
 			// --- Construct Model --- 
@@ -437,11 +442,20 @@ export class BangumiAPI extends APIModel {
 						onlineRating: rating, // Pass number directly
 						publishers: publisher, // Use plural key 'publishers'
 						developers: developer, // Use plural key 'developers'
-						music: music,
+						composer: composer,
 						image: imageUrl,
 						website: website, 
 						description: description,
 						platforms: mappedPlatforms,
+						director: director,
+						producer: producer, 
+						supervisor: supervisor, 
+						designer: designer, 
+						programmer: programmer, 
+						soundDirector: soundDirector, 
+						writer: writer,
+						cast: cast,
+						artist: artist,
 						personalRating: personalRating,	
 						personalTags: personalTags,
 						personalStatus: personalStatus,
@@ -485,16 +499,6 @@ export class BangumiAPI extends APIModel {
 			case '5': return 'Dropped';      // dropped
 			default: return '';           // Unknown or not collected
 		}
-	}
-
-	private extractInfo(infobox: any, keys: string[]): string {
-		if (!infobox) return '';
-
-		for (const key of keys) {
-			if (infobox[key]) return infobox[key];
-		}
-
-		return '';
 	}
 
 	private extractInfoArray(infobox: any[] | undefined, targetKeys: string[]): string[] {
