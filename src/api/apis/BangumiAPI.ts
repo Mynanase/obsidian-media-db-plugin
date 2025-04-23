@@ -269,25 +269,25 @@ export class BangumiAPI extends APIModel {
 					type = MediaType.Book;
 					// Check tags or infobox for subtypes like Novel, Artbook, Manga (Manga should ideally be ComicManga)
 					// Example check (needs refinement based on actual tags/infobox data)
-					if (subjectData.plotform === "漫画") subType = 'Manga';
-					else if (subjectData.plotform === '小说') subType = 'Novel';
-					else if (subjectData.plotform === '画集') subType = 'Artbook';
-					else if (subjectData.plotform === '绘本') subType = 'PictureBook';
-					else if (subjectData.plotform === '公式书') subType = 'GuideBook';
-					else if (subjectData.plotform === '写真') subType = 'PhotoBook';
+					if (subjectData.platform === "漫画") subType = 'Manga';
+					else if (subjectData.platform === '小说') subType = 'Novel';
+					else if (subjectData.platform === '画集') subType = 'Artbook';
+					else if (subjectData.platform === '绘本') subType = 'PictureBook';
+					else if (subjectData.platform === '公式书') subType = 'GuideBook';
+					else if (subjectData.platform === '写真') subType = 'PhotoBook';
 					else subType = 'Other'; // Default book subtype
 					break;
 				case 2: // Anime
 					type = MediaType.Series; // Default to Series for Anime
 					// Check infobox for 'TV', 'OVA', 'Movie'
-					if (subjectData.plotform === 'TV') subType = 'TV';
-					else if (subjectData.plotform === 'OVA')
+					if (subjectData.platform === 'TV') subType = 'TV';
+					else if (subjectData.platform === 'OVA')
 						if (subjectData.eps === 1) type = MediaType.Movie, subType = 'OVA';
 						else subType = 'OVA';
-					else if (subjectData.plotform === 'WEB') subType = 'WEB';
-					else if (subjectData.plotform === '剧场版') subType = '';
-					else if (subjectData.plotform === 'Movie') type = MediaType.Movie, subType = 'Anime';
-					else if (subjectData.plotform === '动态漫画') subType = 'MotionComic';
+					else if (subjectData.platform === 'WEB') subType = 'WEB';
+					else if (subjectData.platform === '剧场版') subType = '';
+					else if (subjectData.platform === 'Movie') type = MediaType.Movie, subType = 'Anime';
+					else if (subjectData.platform === '动态漫画') subType = 'MotionComic';
 					else subType = 'Other'; // General Anime if subtype unclear
 					break;
 				case 3: // Music
@@ -295,22 +295,22 @@ export class BangumiAPI extends APIModel {
 					break;
 				case 4: // Game
 					type = MediaType.Game;
-					if (subjectData.plotform === '游戏') subType = 'videoGame';
-					else if (subjectData.plotform === '扩展包') subType = 'DLC';
-					else if (subjectData.plotform === '桌游') type = MediaType.BoardGame;
-					else subType = 'Other';
+					if (subjectData.platform === '游戏') subType = 'videoGame'; // Check platform
+					else if (subjectData.platform === '扩展包') subType = 'DLC'; // Check platform
+					else if (subjectData.platform === '桌游') type = MediaType.BoardGame; // Check platform
+					else subType = 'videoGame'; // Default to videoGame if platform doesn't match known subtypes
 					break;
 				case 6: // Real (三次元) - Often TV Dramas or Movies
 					type = MediaType.Series;
-					if (subjectData.plotform === '电影') type = MediaType.Movie;
-					else if (subjectData.plotform === '日剧') subType = 'JPTV';
-					else if (subjectData.plotform === '华语剧') subType = 'CNTV';
-					else if (subjectData.plotform === '欧美剧') subType = 'ENTV';
-					else if (subjectData.plotform === '电视剧') subType = 'TV';
-					else if (subjectData.plotform === '演出') 
+					if (subjectData.platform === '电影') type = MediaType.Movie;
+					else if (subjectData.platform === '日剧') subType = 'JPTV';
+					else if (subjectData.platform === '华语剧') subType = 'CNTV';
+					else if (subjectData.platform === '欧美剧') subType = 'ENTV';
+					else if (subjectData.platform === '电视剧') subType = 'TV';
+					else if (subjectData.platform === '演出') 
 						subType = 'Live';
 						if (subjectData.eps === 1) type = MediaType.Movie;
-					else if (subjectData.plotform === '综艺') subType = 'Show';
+					else if (subjectData.platform === '综艺') subType = 'Show';
 					else subType = 'Other';
 					break;
 				default:
@@ -320,6 +320,15 @@ export class BangumiAPI extends APIModel {
 
 			// --- Extract Common Fields --- 
 			const year = subjectData.date ? new Date(subjectData.date).getFullYear().toString() : '';
+			const releaseDateString = subjectData.date ? new Date(subjectData.date).toISOString() : '';
+			let releasedStatus = false; // Default to not released
+			if (releaseDateString) {
+				const releaseDateTime = new Date(releaseDateString);
+				if (!isNaN(releaseDateTime.getTime())) { // Check if the date is valid
+					releasedStatus = releaseDateTime <= new Date(); // Compare with current time
+				}
+			}
+			
 			let primaryTitle = subjectData.name_cn || subjectData.name;
 			let englishTitle = subjectData.name;
 			if (subjectData.name_cn && subjectData.name) {
@@ -340,11 +349,10 @@ export class BangumiAPI extends APIModel {
 			// Extract top 5 tags based on count from subjectData
 			const tags = subjectData.tags && Array.isArray(subjectData.tags)
 				? subjectData.tags
-					.sort((a: { count: number }, b: { count: number }) => b.count - a.count) // Sort descending by count
 					.slice(0, 5) // Take top 5
 					.map((tag: { name: string }) => tag.name) // Extract names
 				: []; // Default to empty array if no tags
-			const genres = this.extractInfoArray(subjectData.infobox, ['游戏类型', '体裁', '题材']).join(', ');
+			const genres = this.extractInfoArray(subjectData.infobox, ['游戏类型', '体裁', '题材']);
 
 			// --- Extract Personal Fields (from userData if available) --- 
 			const personalRating = userData?.rate; // Already a string or undefined
@@ -362,11 +370,15 @@ export class BangumiAPI extends APIModel {
 
 			// --- Extract Role-Specific Fields --- 
 			// These are generally from subjectData.infobox
-			const director = this.extractInfoArray(subjectData.infobox, ['导演']).join(', ');
-			const writer = this.extractInfoArray(subjectData.infobox, ['脚本', '原作']).join(', ');
-			const cast = this.extractInfoArray(subjectData.infobox, ['主演', '声优', 'cv', 'キャスト']).join(', ');
-			const publisher = this.extractInfoArray(subjectData.infobox, ['出版社', '唱片公司', '发行']).join(', ');
-			const developer = this.extractInfoArray(subjectData.infobox, ['开发', '游戏开发']).join(', ');
+			console.log('Bangumi infobox:', subjectData.infobox); // Add log for infobox
+			console.log('Bangumi infobox:', subjectData.infobox, subjectData.infobox['导演']); // Add log for infobox
+			const director = this.extractInfoArray(subjectData.infobox, ['导演']);
+			const writer = this.extractInfoArray(subjectData.infobox, ['脚本', '原作']);
+			const cast = this.extractInfoArray(subjectData.infobox, ['主演', '声优', 'cv', 'キャスト']);
+			const publisher = this.extractInfoArray(subjectData.infobox, ['出版社', '唱片公司', '发行']);
+			const developer = this.extractInfoArray(subjectData.infobox, ['开发', '游戏开发']); // Remember to add '游戏开发商' here again if needed
+			const website = this.extractInfoArray(subjectData.infobox, ['website']);
+			const music = this.extractInfoArray(subjectData.infobox, ['音乐']);
 
 			// --- Construct Model --- 
 			const modelData: any = {
@@ -375,22 +387,9 @@ export class BangumiAPI extends APIModel {
 				title: title,
 				englishTitle: englishTitle,
 				year: year,
+				dataSource: this.apiName,
+				url: 'https://www.bangumi.tv/subject/' + id,
 				id: id,
-				imageUrl: imageUrl,
-				description: description,
-				rating: rating,
-				tags: tags,
-				genres: genres,
-				personalRating: personalRating,
-				personalTags: personalTags,
-				personalStatus: personalStatus,
-				// Add role fields
-				director: director,
-				writer: writer,
-				cast: cast,
-				publisher: publisher,
-				developer: developer,
-				// Add other common fields if needed
 			};
 
 			let model: MediaTypeModel;
@@ -398,7 +397,7 @@ export class BangumiAPI extends APIModel {
 			// Use the determined 'type' to instantiate the correct model
 			switch (type) {
 				case MediaType.Book:
-					model = new BookModel({ ...modelData, author: this.extractInfoArray(subjectData.infobox, ['作者']).join(', ') });
+					model = new BookModel({ ...modelData, author: this.extractInfoArray(subjectData.infobox, ['作者']) });
 					break;
 				case MediaType.Movie:
 					model = new MovieModel(modelData);
@@ -407,10 +406,51 @@ export class BangumiAPI extends APIModel {
 					model = new SeriesModel(modelData);
 					break;
 				case MediaType.Game:
-					model = new GameModel(modelData);
+					const platformMap: { [key: string]: string } = {
+						'pc': 'PC',
+						'ps4': 'PS4',
+						'playstation 4': 'PS4',
+						'ps5': 'PS5',
+						'playstation 5': 'PS5',
+						'xbox one': 'XB1',
+						'xbox series x': 'XSX',
+						'xbox series s': 'XSS',
+						'xbox series x/s': 'XSX/S',
+						'nintendo switch': 'NS',
+						'switch': 'NS',
+						'ios': 'iOS',
+						'android': 'Android',
+						'nintendo switch 2': 'NS2',
+					};
+					
+					const rawPlatforms = this.extractInfoArray(subjectData.infobox, ['平台']);
+					console.log('Bangumi platform for game:', rawPlatforms); // Add log for platform
+					const mappedPlatforms = rawPlatforms.map(platform => {
+						const lowerPlatform = platform.toLowerCase().trim();
+						return platformMap[lowerPlatform] || platform; // Use original if no mapping found
+					});
+					
+					model = new GameModel({ 
+						...modelData, 
+						tags: tags,
+						genres: genres,
+						onlineRating: rating,
+						publisher: publisher,
+						developer: developer,
+						music: music,
+						image: imageUrl,
+						website: website, 
+						description: description,
+						platforms: mappedPlatforms,
+						personalRating: personalRating,	
+						personalTags: personalTags,
+						personalStatus: personalStatus,
+						released: releasedStatus, // Use calculated status
+						releaseDate: releaseDateString, // Use the ISO string
+				});
 					break;
 				case MediaType.MusicRelease:
-					model = new MusicReleaseModel({ ...modelData, artist: this.extractInfoArray(subjectData.infobox, ['艺术家', '歌手', '作曲']).join(', ') });
+					model = new MusicReleaseModel({ ...modelData, artist: this.extractInfoArray(subjectData.infobox, ['艺术家', '歌手', '作曲']) });
 					break;
 				// Add cases for other types like BoardGame if supported by Bangumi
 				default:
@@ -477,8 +517,8 @@ export class BangumiAPI extends APIModel {
 							return subItem;
 						}
 						return ''; // Or handle other structures as needed
-					}).filter(Boolean).join(', '); // Join sub-values with comma
-					if (subValues) values.push(subValues);
+					}).filter(Boolean); // Filter out empty strings
+					if (subValues.length > 0) values.push(...subValues);
 				} else if (item.value && typeof item.value === 'object') {
 					// Handle cases where value is a simple object (though not seen in example)
 					// Maybe stringify or extract specific properties? For now, skip or stringify.

@@ -6,35 +6,47 @@ import { MediaTypeModel } from './MediaTypeModel';
 export type GameData = ModelToData<GameModel>;
 
 export class GameModel extends MediaTypeModel {
-	developers: string[];
-	publishers: string[];
+	tags: string[];
 	genres: string[];
 	onlineRating: number;
+	platforms: string[];
+	developers: string[];
+	publishers: string[];
+	music: string[];
 	image: string;
-
+	website: string;
+	description: string;
 	released: boolean;
 	releaseDate: string;
 
 	userData: {
 		played: boolean;
 		personalRating: number;
+		personalStatus?: string;
+		personalTags?: string[];
 	};
 
 	constructor(obj: GameData) {
 		super();
 
-		this.developers = [];
-		this.publishers = [];
+		this.tags = [];
 		this.genres = [];
 		this.onlineRating = 0;
+		this.platforms = [];
+		this.developers = [];
+		this.publishers = [];
+		this.music = [];
 		this.image = '';
-
+		this.website = '';
+		this.description = '';
 		this.released = false;
 		this.releaseDate = '';
 
 		this.userData = {
 			played: false,
 			personalRating: 0,
+			personalStatus: undefined,
+			personalTags: undefined,
 		};
 
 		migrateObject(this, obj, this);

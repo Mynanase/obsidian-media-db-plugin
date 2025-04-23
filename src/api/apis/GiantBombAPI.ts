@@ -101,7 +101,6 @@ export class GiantBombAPI extends APIModel {
 
 			userData: {
 				played: false,
-
 				personalRating: 0,
 			},
 		});
