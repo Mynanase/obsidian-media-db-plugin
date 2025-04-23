@@ -603,7 +603,7 @@
 			"format": "esm"
 		},
 		"src/api/apis/BangumiAPI.ts": {
-			"bytes": 21839,
+			"bytes": 22066,
 			"imports": [
 				{
 					"path": "obsidian",
@@ -5398,7 +5398,7 @@
 					"bytesInOutput": 844
 				},
 				"src/api/apis/MALAPI.ts": {
-					"bytesInOutput": 5227
+					"bytesInOutput": 5230
 				},
 				"src/models/ComicMangaModel.ts": {
 					"bytesInOutput": 849
@@ -5437,7 +5437,7 @@
 					"bytesInOutput": 1790
 				},
 				"src/api/apis/BangumiAPI.ts": {
-					"bytesInOutput": 9704
+					"bytesInOutput": 9741
 				},
 				"src/modals/MediaDbFolderImportModal.ts": {
 					"bytesInOutput": 2148
@@ -5614,7 +5614,7 @@
 					"bytesInOutput": 356
 				},
 				"node_modules/@popperjs/core/lib/enums.js": {
-					"bytesInOutput": 465
+					"bytesInOutput": 463
 				},
 				"node_modules/@popperjs/core/lib/index.js": {
 					"bytesInOutput": 0
@@ -5683,13 +5683,13 @@
 					"bytesInOutput": 68
 				},
 				"node_modules/@popperjs/core/lib/modifiers/arrow.js": {
-					"bytesInOutput": 993
+					"bytesInOutput": 991
 				},
 				"node_modules/@popperjs/core/lib/utils/getVariation.js": {
 					"bytesInOutput": 38
 				},
 				"node_modules/@popperjs/core/lib/modifiers/computeStyles.js": {
-					"bytesInOutput": 2115
+					"bytesInOutput": 2113
 				},
 				"node_modules/@popperjs/core/lib/modifiers/eventListeners.js": {
 					"bytesInOutput": 556
@@ -5728,22 +5728,22 @@
 					"bytesInOutput": 819
 				},
 				"node_modules/@popperjs/core/lib/utils/computeOffsets.js": {
-					"bytesInOutput": 494
+					"bytesInOutput": 493
 				},
 				"node_modules/@popperjs/core/lib/utils/detectOverflow.js": {
-					"bytesInOutput": 857
+					"bytesInOutput": 856
 				},
 				"node_modules/@popperjs/core/lib/utils/computeAutoPlacement.js": {
 					"bytesInOutput": 463
 				},
 				"node_modules/@popperjs/core/lib/modifiers/flip.js": {
-					"bytesInOutput": 1392
+					"bytesInOutput": 1394
 				},
 				"node_modules/@popperjs/core/lib/modifiers/hide.js": {
-					"bytesInOutput": 746
+					"bytesInOutput": 745
 				},
 				"node_modules/@popperjs/core/lib/modifiers/offset.js": {
-					"bytesInOutput": 582
+					"bytesInOutput": 581
 				},
 				"node_modules/@popperjs/core/lib/modifiers/popperOffsets.js": {
 					"bytesInOutput": 224
@@ -5752,7 +5752,7 @@
 					"bytesInOutput": 38
 				},
 				"node_modules/@popperjs/core/lib/modifiers/preventOverflow.js": {
-					"bytesInOutput": 1729
+					"bytesInOutput": 1730
 				},
 				"node_modules/@popperjs/core/lib/dom-utils/getHTMLElementScroll.js": {
 					"bytesInOutput": 69
@@ -5812,7 +5812,7 @@
 					"bytesInOutput": 1219
 				}
 			},
-			"bytes": 170681
+			"bytes": 170714
 		}
 	}
 }

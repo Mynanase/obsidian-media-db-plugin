@@ -372,8 +372,6 @@ export class BangumiAPI extends APIModel {
 
 			// --- Extract Role-Specific Fields --- 
 			// These are generally from subjectData.infobox
-			console.log('Bangumi infobox:', subjectData.infobox); // Add log for infobox
-			console.log('Bangumi infobox:', subjectData.infobox, subjectData.infobox['导演']); // Add log for infobox
 			const director = this.extractInfoArray(subjectData.infobox, ['导演']);
 			const writer = this.extractInfoArray(subjectData.infobox, ['脚本', '原作']);
 			const cast = this.extractInfoArray(subjectData.infobox, ['主演', '声优', 'cv', 'キャスト']);
@@ -381,6 +379,7 @@ export class BangumiAPI extends APIModel {
 			const developer = this.extractInfoArray(subjectData.infobox, ['开发', '游戏开发']); // Remember to add '游戏开发商' here again if needed
 			const website = this.extractInfoArray(subjectData.infobox, ['website']);
 			const music = this.extractInfoArray(subjectData.infobox, ['音乐']);
+			const artist = this.extractInfoArray(subjectData.infobox, ['美工', '美术']);
 
 			// --- Construct Model --- 
 			const modelData: any = {
@@ -426,10 +425,9 @@ export class BangumiAPI extends APIModel {
 					};
 					
 					const rawPlatforms = this.extractInfoArray(subjectData.infobox, ['平台']);
-					console.log('Bangumi platform for game:', rawPlatforms); // Add log for platform
-					const mappedPlatforms = rawPlatforms.map(platform => {
-						const lowerPlatform = platform.toLowerCase().trim();
-						return platformMap[lowerPlatform] || platform; // Use original if no mapping found
+					const mappedPlatforms = rawPlatforms.map((s: string) => {
+						const lowerPlatform = s.toLowerCase().trim();
+						return platformMap[lowerPlatform] || s; // Use original if no mapping found
 					});
 					
 					model = new GameModel({ 
@@ -509,7 +507,15 @@ export class BangumiAPI extends APIModel {
 			if (item && typeof item === 'object' && item.key && targetKeys.includes(item.key)) {
 				// Handle different value types
 				if (typeof item.value === 'string') {
-					values.push(item.value);
+					// Check if the string contains the enumeration comma
+					if (item.value.includes('、')) {
+						// Split by the comma, trim whitespace from each part, and filter out empty strings
+						const splitValues = item.value.split('、').map((s: string) => s.trim()).filter(Boolean);
+						values.push(...splitValues); // Add all split values
+					} else {
+						// If no comma, just push the single value (trimmed)
+						values.push(item.value.trim());
+					}
 				} else if (Array.isArray(item.value)) {
 					// If value is an array (like '平台'), extract 'v' or the item itself if it's a simple string array
 					const subValues = item.value.map((subItem: any) => {
