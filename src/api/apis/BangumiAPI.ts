@@ -437,8 +437,8 @@ export class BangumiAPI extends APIModel {
 						apiTags: apiTags,
 						genres: genres,
 						onlineRating: rating, // Pass number directly
-						publisher: publisher,
-						developer: developer,
+						publishers: publisher, // Use plural key 'publishers'
+						developers: developer, // Use plural key 'developers'
 						music: music,
 						image: imageUrl,
 						website: website, 

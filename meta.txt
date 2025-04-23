@@ -603,7 +603,7 @@
 			"format": "esm"
 		},
 		"src/api/apis/BangumiAPI.ts": {
-			"bytes": 21775,
+			"bytes": 21839,
 			"imports": [
 				{
 					"path": "obsidian",
@@ -5437,7 +5437,7 @@
 					"bytesInOutput": 1790
 				},
 				"src/api/apis/BangumiAPI.ts": {
-					"bytesInOutput": 9702
+					"bytesInOutput": 9704
 				},
 				"src/modals/MediaDbFolderImportModal.ts": {
 					"bytesInOutput": 2148
@@ -5812,7 +5812,7 @@
 					"bytesInOutput": 1219
 				}
 			},
-			"bytes": 170679
+			"bytes": 170681
 		}
 	}
 }
