@@ -9,15 +9,16 @@ export class GameModel extends MediaTypeModel {
 	tags: string[];
 	genres: string[];
 	onlineRating: number;
-	platforms: string[];
-	developers: string[];
-	publishers: string[];
+	platforms?: string[];
+	developers?: string[];
+	publishers?: string[];
 	music: string[];
 	image: string;
 	website: string;
 	description: string;
-	released: boolean;
+	released?: boolean;
 	releaseDate: string;
+	apiTags?: string[];
 
 	userData: {
 		played: boolean;
@@ -26,7 +27,7 @@ export class GameModel extends MediaTypeModel {
 		personalTags?: string[];
 	};
 
-	constructor(obj: GameData) {
+	constructor(obj: Partial<GameData>) {
 		super();
 
 		this.tags = [];
@@ -41,6 +42,7 @@ export class GameModel extends MediaTypeModel {
 		this.description = '';
 		this.released = false;
 		this.releaseDate = '';
+		this.apiTags = [];
 
 		this.userData = {
 			played: false,

@@ -27,7 +27,7 @@
 			"format": "esm"
 		},
 		"src/models/MediaTypeModel.ts": {
-			"bytes": 1121,
+			"bytes": 1217,
 			"imports": [
 				{
 					"path": "<runtime>",
@@ -106,7 +106,7 @@
 			"format": "esm"
 		},
 		"src/models/GameModel.ts": {
-			"bytes": 1474,
+			"bytes": 1529,
 			"imports": [
 				{
 					"path": "src/utils/MediaType.ts",
@@ -603,7 +603,7 @@
 			"format": "esm"
 		},
 		"src/api/apis/BangumiAPI.ts": {
-			"bytes": 21540,
+			"bytes": 21775,
 			"imports": [
 				{
 					"path": "obsidian",
@@ -5377,7 +5377,7 @@
 					"bytesInOutput": 2710
 				},
 				"src/models/MediaTypeModel.ts": {
-					"bytesInOutput": 650
+					"bytesInOutput": 724
 				},
 				"src/models/BoardGameModel.ts": {
 					"bytesInOutput": 688
@@ -5389,7 +5389,7 @@
 					"bytesInOutput": 2188
 				},
 				"src/models/GameModel.ts": {
-					"bytesInOutput": 809
+					"bytesInOutput": 843
 				},
 				"src/models/MovieModel.ts": {
 					"bytesInOutput": 782
@@ -5398,7 +5398,7 @@
 					"bytesInOutput": 844
 				},
 				"src/api/apis/MALAPI.ts": {
-					"bytesInOutput": 5230
+					"bytesInOutput": 5227
 				},
 				"src/models/ComicMangaModel.ts": {
 					"bytesInOutput": 849
@@ -5437,7 +5437,7 @@
 					"bytesInOutput": 1790
 				},
 				"src/api/apis/BangumiAPI.ts": {
-					"bytesInOutput": 9654
+					"bytesInOutput": 9702
 				},
 				"src/modals/MediaDbFolderImportModal.ts": {
 					"bytesInOutput": 2148
@@ -5614,7 +5614,7 @@
 					"bytesInOutput": 356
 				},
 				"node_modules/@popperjs/core/lib/enums.js": {
-					"bytesInOutput": 463
+					"bytesInOutput": 465
 				},
 				"node_modules/@popperjs/core/lib/index.js": {
 					"bytesInOutput": 0
@@ -5683,13 +5683,13 @@
 					"bytesInOutput": 68
 				},
 				"node_modules/@popperjs/core/lib/modifiers/arrow.js": {
-					"bytesInOutput": 991
+					"bytesInOutput": 993
 				},
 				"node_modules/@popperjs/core/lib/utils/getVariation.js": {
 					"bytesInOutput": 38
 				},
 				"node_modules/@popperjs/core/lib/modifiers/computeStyles.js": {
-					"bytesInOutput": 2113
+					"bytesInOutput": 2115
 				},
 				"node_modules/@popperjs/core/lib/modifiers/eventListeners.js": {
 					"bytesInOutput": 556
@@ -5728,22 +5728,22 @@
 					"bytesInOutput": 819
 				},
 				"node_modules/@popperjs/core/lib/utils/computeOffsets.js": {
-					"bytesInOutput": 493
+					"bytesInOutput": 494
 				},
 				"node_modules/@popperjs/core/lib/utils/detectOverflow.js": {
-					"bytesInOutput": 856
+					"bytesInOutput": 857
 				},
 				"node_modules/@popperjs/core/lib/utils/computeAutoPlacement.js": {
 					"bytesInOutput": 463
 				},
 				"node_modules/@popperjs/core/lib/modifiers/flip.js": {
-					"bytesInOutput": 1394
+					"bytesInOutput": 1392
 				},
 				"node_modules/@popperjs/core/lib/modifiers/hide.js": {
-					"bytesInOutput": 745
+					"bytesInOutput": 746
 				},
 				"node_modules/@popperjs/core/lib/modifiers/offset.js": {
-					"bytesInOutput": 581
+					"bytesInOutput": 582
 				},
 				"node_modules/@popperjs/core/lib/modifiers/popperOffsets.js": {
 					"bytesInOutput": 224
@@ -5752,7 +5752,7 @@
 					"bytesInOutput": 38
 				},
 				"node_modules/@popperjs/core/lib/modifiers/preventOverflow.js": {
-					"bytesInOutput": 1730
+					"bytesInOutput": 1729
 				},
 				"node_modules/@popperjs/core/lib/dom-utils/getHTMLElementScroll.js": {
 					"bytesInOutput": 69
@@ -5812,7 +5812,7 @@
 					"bytesInOutput": 1219
 				}
 			},
-			"bytes": 170519
+			"bytes": 170679
 		}
 	}
 }

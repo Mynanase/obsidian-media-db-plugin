@@ -9,6 +9,8 @@ export abstract class MediaTypeModel {
 	dataSource: string;
 	url: string;
 	id: string;
+	apiTags?: string[];
+	genres?: string[];
 
 	userData: object;
 
@@ -25,6 +27,8 @@ export abstract class MediaTypeModel {
 		this.dataSource = '';
 		this.url = '';
 		this.id = '';
+		this.apiTags = undefined;
+		this.genres = undefined;
 		this.userData = {};
 		this.personalRating = undefined;
 		this.personalStatus = undefined;
